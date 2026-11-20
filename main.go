@@ -48,6 +48,13 @@ func main() {
 					"by default a .lrc file can only have a maximum length of 59:59.99\n" +
 					"(some players may not support longer durations)",
 			},
+			&cli.BoolFlag{
+				Name:    "enhanced",
+				Aliases: []string{"e"},
+				Usage: "Export enhanced (A2) .lrc with word-level timestamps\n" +
+					"when the input contains per-word timing (e.g. WebVTT karaoke tags);\n" +
+					"cues without word timing fall back to plain whole-line output",
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			if cCtx.NArg() < 1 {
@@ -57,6 +64,7 @@ func main() {
 			args := shared.UserArgs{
 				Separator:     cCtx.String("separator"),
 				NoLengthLimit: cCtx.Bool("no-length-limit"),
+				Enhanced:      cCtx.Bool("enhanced"),
 			}
 
 			// Read the argument

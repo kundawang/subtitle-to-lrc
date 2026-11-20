@@ -12,13 +12,13 @@ import (
 )
 
 func ConvertToLyricsFile(subtitle_file []string, extension string, args shared.UserArgs) ([]string, error) {
-	converters := map[string]func([]string) ([]shared.SubtitleChunk, error){
+	converters := map[string]func([]string, shared.UserArgs) ([]shared.SubtitleChunk, error){
 		"vtt": vtt.ConvertToChunks,
 		"srt": srt.ConvertToChunks,
 	}
 
 	if Converter, ok := converters[extension]; ok {
-		chunks, err := Converter(subtitle_file)
+		chunks, err := Converter(subtitle_file, args)
 		if err != nil {
 			return nil, err
 		}
@@ -90,6 +90,30 @@ func MillisecondsToTimestamp(milliseconds int) string {
 	return fmt.Sprintf("[%02d:%02d.%02d]", minutes, seconds, millis)
 }
 
+// MillisecondsToWordTimestamp formats a word-level timestamp for the
+// enhanced (A2) LRC extension, e.g. <01:23.45>.
+func MillisecondsToWordTimestamp(milliseconds int) string {
+	minutes := milliseconds / 60000
+	seconds := (milliseconds / 1000) % 60
+	millis := (milliseconds % 1000) / 10
+
+	return fmt.Sprintf("<%02d:%02d.%02d>", minutes, seconds, millis)
+}
+
 func GetLrcLine(chunk *shared.SubtitleChunk, args shared.UserArgs) string {
-	return MillisecondsToTimestamp(chunk.StartTimeMs) + strings.Join(chunk.Lines, args.Separator)
+	lineTimestamp := MillisecondsToTimestamp(chunk.StartTimeMs)
+
+	// Enhanced (word-level) LRC: emit one <mm:ss.xx> tag per word.
+	// Cues without inline word timings fall back to a plain line.
+	if args.Enhanced && len(chunk.Words) > 0 {
+		var sb strings.Builder
+		sb.WriteString(lineTimestamp)
+		for _, word := range chunk.Words {
+			sb.WriteString(MillisecondsToWordTimestamp(word.TimeMs))
+			sb.WriteString(word.Text)
+		}
+		return sb.String()
+	}
+
+	return lineTimestamp + strings.Join(chunk.Lines, args.Separator)
 }

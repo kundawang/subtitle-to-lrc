@@ -8,7 +8,10 @@ import (
 	"github.com/shipurjan/subtitle-to-lrc/converter/shared"
 )
 
-func ConvertToChunks(srt_file []string) ([]shared.SubtitleChunk, error) {
+func ConvertToChunks(srt_file []string, args shared.UserArgs) ([]shared.SubtitleChunk, error) {
+	// SRT has no inline word-level timestamps; args are accepted to keep
+	// a uniform converter signature.
+	_ = args
 	body_chunks, err := SplitBodyIntoChunks(srt_file)
 	if err != nil {
 		return nil, err
